@@ -1,0 +1,102 @@
+version: "3.9"
+services:
+  api:
+    container_name: dev1
+    build: ./dev1/
+    #image: registry.gitlab.com/darinmilner/dev1:latest
+    networks:
+      - backend
+    volumes:
+      - type: volume
+        source: dev1-vol
+        target: /app
+  nodered:
+    container_name: nodered
+    build: ./nodered/
+    #image: registry.gitlab.com/darinmilner/nodered:latest
+    networks:
+      - backend
+    ports:
+      - "1880:1880"
+    volumes:
+      - type: volume
+        source: nodered-vol
+        target: /data
+    environment:
+      - INFLUXDB_TOKEN=mtctoken
+  influxdb:
+    container_name: influxdb
+    build: ./influxdb/
+    #image: registry.gitlab.com/darinmilner/dev1:influxdb
+    networks:
+      - backend
+    volumes:
+      - type: volume
+        source: influxdb-vol
+        target: /var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=mtc
+      - DOCKER_INFLUXDB_INIT_PASSWORD=mtcpassword
+      - DOCKER_INFLUXDB_INIT_ORG=mtc
+      - DOCKER_INFLUXDB_INIT_BUCKET=mtcbucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mtctoken
+  grafana:
+    container_name: grafana
+    build: ./grafana
+    #image: registry.gitlab.com/darinmilner/grafana:latest
+    networks:
+      - backend
+      - db
+      - frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - type: volume
+        source: grafana-vol
+        target: /var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=mtc
+      - GF_SECURITY_ADMIN_PASSWORD=mtcpassword
+      - INFLUXDB_TOKEN=mtctoken
+      - POSTGRES_USER=mtc
+      - POSTGRES_DB=mtcdb
+      - POSTGRES_PASSWORD=mtcpassword
+  postgres:
+    container_name: postgres
+    build: ./postgres/
+    #image: registry.gitlab.com/darinmilner/postgres:latest
+    networks:
+      - db
+    volumes:
+      - type: volume
+        source: postgres-vol
+        target: /var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=mtc
+      - POSTGRES_PASSWORD=mtcpassword
+      - POSTGRES_DB=mtcdb
+  postgrest:
+    container_name: postgrest
+    image: postgrest/postgrest
+    networks:
+      - db
+      - backend
+    environment:
+      - PGRST_DB_URI=postgres://mtc:mtcpassword@postgres:5432/mtcdb
+      - PGRST_DB_ANON_ROLE=mtc
+
+volumes:
+  dev1-vol: {}
+  nodered-vol: {}
+  influxdb-vol: {}
+  grafana-vol: {}
+  postgres-vol: {}
+networks:
+  frontend: {}
+  backend: {}
+  db: {}
+
+docker-compose exec -T postgres pg_dumpall -U mtc --database mtcdb --data-only > dump.sql
+Load data
+cat dump.sql | docker-compose exec -T postgres psql -U mtc -d mtcdb

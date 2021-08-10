@@ -1,0 +1,15 @@
+Docker Project 
+
+Dockerized backend Python app (created by MTC-Docker Udemy course instructor),
+Grafana,
+InfluxDB,
+PostgresDB,
+Nodered,
+Postgrest
+
+Deployment of multi containered app.  Can be deployed to AWS, Azure, Google Cloud, Digital Ocean or other similar cloud service.
+Project can be setup on Gitlab for a CI pipeline.  Gitlab has private Docker image registry
+to store the images.  An example link to gitlab is commented out for each service.
+
+Grafana, InfluxDB, Postgres and Nodered images are set up to save and load in the data.  
+Postgres sql data is not checked into Github as it could contain sensitive DB data.
